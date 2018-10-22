@@ -40,13 +40,13 @@ with open('cars.csv') as csv_file:
         driver.implicitly_wait(10)
         # Open the encar website page in an incognito Chrome window
         driver.get(row[4])
-        # collect the surface level listings
-        CARS = driver.find_elements_by_class_name('listing-row__details')
-        # collect all the LINKS for the CARS on that page
+
+        elems = driver.find_elements_by_xpath('//a[@href]')
         LINKS = []
-        for car in CARS:
-            # extract only the vehicle details page link
-            LINKS.append(extract_link(car))
+        for elem in elems:
+            href = elem.get_attribute('href')
+            if 'vehicledetail' in href:
+                LINKS.append(href)
         IMAGES = []
         for link in LINKS:
             print(f'{bcolors.OKBLUE}Visiting {link}{bcolors.ENDC}')
@@ -58,9 +58,18 @@ with open('cars.csv') as csv_file:
                 data_image = div.get_attribute('data-image')
                 if data_image:
                     IMAGES.append(data_image)
+
+        if os.path.exists('./images.txt'):
+            os.remove('./images.txt')
+        images_file = open('images.txt', 'w')
+        for image in IMAGES:
+            images_file.write(f'{image}\n')
+        images_file.close()
+
         # activate the concurrent image downloader
-        bashCommand = f"./concurrent-image-download {DIR_NAME} {' '.join(IMAGES)}"
+        bash_command = f'./concurrent-image-download {DIR_NAME} &'
+        # print(bash_command)
         # subprocess.Popen ensures that this is a non-blocking system call
-        subprocess.Popen(['bash', '-c', bashCommand])
+        subprocess.Popen(['bash', '-c', bash_command])
         # destroy this driver session and move on to the next one
         driver.quit()
